@@ -1,11 +1,13 @@
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <speex/speex.h>
 #include <speex/speex_preprocess.h>
-
-#include <dfs_posix.h>
 
 struct wav_header
 {
@@ -69,7 +71,10 @@ int main(int argc, char** argv)
 	void *st = 0;
 	SpeexBits bits;
 
-	if (argc != 2 && argc != 3) return -1;
+	if (argc != 2 && argc != 3) {
+		printf("usage: speexenc in_wav_file [out_speex_file]\n");
+		return -1;
+	}
 
 	speex_headersz = 2;
 
