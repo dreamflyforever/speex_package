@@ -7,7 +7,6 @@
 #include <stdio.h>
 
 #include <speex/speex.h>
-#include <speex/speex_preprocess.h>
 
 struct wav_header
 {
@@ -27,7 +26,7 @@ struct wav_header
 
 static int _get_framesize(int samplerate)
 {
-	return (samplerate * 2)/ 20; /* 20ms */
+	return (samplerate * 2)/ (1000/20); /* 20ms */
 }
 
 static int _write_header(uint8_t *frame, int pdu_len, int headersz)
@@ -84,7 +83,7 @@ int main(int argc, char** argv)
 	}
 
 	if (argc == 3)
-		out_fd = open(argv[2], O_WRONLY, 0);
+		out_fd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0);
 	else
 		out_fd = open("dummy.spx", O_WRONLY | O_CREAT | O_TRUNC, 0);
 	if (out_fd < 0) {
@@ -131,8 +130,8 @@ int main(int argc, char** argv)
 		speex_bits_reset(&bits);
 		speex_encode_int(st, pcm_frame, &bits);
 		length = speex_bits_write(&bits,
-					&spx_frame[speex_headersz],
-					sizeof(spx_frame) - speex_headersz);
+				&spx_frame[speex_headersz],
+				sizeof(spx_frame) - speex_headersz);
 
 		_write_header(spx_frame, length, speex_headersz);
 		write(out_fd, spx_frame, length + speex_headersz);

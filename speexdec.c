@@ -5,9 +5,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
-
 #include <speex/speex.h>
-#include <speex/speex_preprocess.h>
 
 struct wav_header
 {
@@ -43,7 +41,7 @@ static void init_wav_header(char *wav_buf, uint32_t wav_len, int samplerate)
 	header->size2 = wav_len - 44;
 }
 
-int get_header_length(uint8_t *data, int header_len)
+static int get_header_length(uint8_t *data, int header_len)
 {
 	int length = 0;
 
@@ -52,16 +50,14 @@ int get_header_length(uint8_t *data, int header_len)
 		length = *data | *(data + 1) << 8;
 	}
 	if (header_len == 4) {
-		length = *data | *(data + 1) << 8 | *(data + 2) << 16 | *(data + 3) << 24;
+		length = *data | *(data + 1) << 8 | *(data + 2)
+		<< 16 | *(data + 3) << 24;
 	}
 
 	return length;
 }
 
-int16_t frame_buffer[16000 / (1000 / 20)];     /* maximal 16000 sample rate */
-char data[320];
 spx_int16_t pcm_frame[320];
-
 void main(int argc, char *argv[])
 {
 	int header_len = 2;
@@ -70,62 +66,64 @@ void main(int argc, char *argv[])
 	int out_fd;
 	int pcm_length = 0;
 	int sample_num = samplerate / (1000 / 20);
-	int frame_index = 0;
+	uint8_t spx_data[128];
 
 	int in_fd = open(argv[1], O_RDONLY, 0);
 	if (in_fd < 0) {
 		printf("open %s error\n", argv[1]);
 		return ;
-	} else {
-		out_fd = open("dummy.wav", O_WRONLY | O_CREAT | O_TRUNC, 0);
-		if (out_fd < 0) {
-			printf("open dummy.wav error\n");
-			return ;
-		}
-		int frame_len;
-		void *stateDecode;
-		SpeexBits bitsDecode;
-		struct wav_header header;
-		int mode;
-
-		if (samplerate > 12500) mode = SPEEX_MODEID_WB;
-		else mode = SPEEX_MODEID_NB;
-
-		printf("speex decode mode: %s\n", mode == SPEEX_MODEID_WB ? "WB" : "NB");
-		printf("speex sample rate: %d\n", samplerate);
-
-		stateDecode = speex_decoder_init(speex_lib_get_mode(mode));
-		speex_bits_init(&bitsDecode);
-
-		/* write header firstly */
-		init_wav_header(&header, 0, 0);
-		write(out_fd, &header, sizeof(struct wav_header));
-
-		while ((read(in_fd, data, 320) > 0 )) {
-			frame_len = get_header_length(data, header_len);
-			printf("%d frame, length => %d\n", frame_index++, frame_len);
-
-			speex_bits_reset(&bitsDecode);
-			speex_bits_read_from(&bitsDecode, data + header_len, frame_len);
-
-			int ret = speex_decode_int(stateDecode, &bitsDecode, (spx_int16_t*)pcm_frame);
-
-			write(out_fd, pcm_frame, sample_num * sizeof(uint16_t));
-			pcm_length += sample_num * sizeof(uint16_t);
-			//data += (header_len + frame_len);
-			//length -= (header_len + frame_len);
-			memset(data, 0, 320);
-		}
-		printf("read in file over\n");
-
-		speex_bits_destroy(&bitsDecode);
-		speex_decoder_destroy(stateDecode);
-
-		/* rewrite wav header */
-		lseek(out_fd, 0, SEEK_SET);
-		init_wav_header(&header, pcm_length, samplerate);
-		write(out_fd, &header, sizeof(struct wav_header));
-		close(out_fd);
-		close(in_fd);
 	}
+	out_fd = open("dummy.wav", O_WRONLY | O_CREAT | O_TRUNC, 0);
+	if (out_fd < 0) {
+		printf("open dummy.wav error\n");
+		return ;
+	}
+	int frame_len;
+	void *stateDecode;
+	SpeexBits bitsDecode;
+	struct wav_header header;
+	int mode;
+
+	if (samplerate > 12500) mode = SPEEX_MODEID_WB;
+	else mode = SPEEX_MODEID_NB;
+
+	printf("speex decode mode: %s\n", mode == SPEEX_MODEID_WB ? "WB" : "NB");
+	printf("speex sample rate: %d\n", samplerate);
+
+	stateDecode = speex_decoder_init(speex_lib_get_mode(mode));
+	speex_bits_init(&bitsDecode);
+
+	/* write header firstly */
+	init_wav_header(&header, 0, 0);
+	write(out_fd, &header, sizeof(struct wav_header));
+
+	while (1) {
+		/* read header */
+		length = read(in_fd, spx_data, header_len);
+		if (length != header_len) break;
+		frame_len = get_header_length(spx_data, header_len);
+		length = read(in_fd, spx_data, frame_len);
+		if (length != frame_len) break;
+
+		speex_bits_reset(&bitsDecode);
+		speex_bits_read_from(&bitsDecode, spx_data, frame_len);
+
+		int ret = speex_decode_int(stateDecode,
+				&bitsDecode,
+				(spx_int16_t*)pcm_frame);
+
+		write(out_fd, pcm_frame, sample_num * sizeof(uint16_t));
+		pcm_length += sample_num * sizeof(uint16_t);
+	}
+	printf("read in file over\n");
+	close(in_fd);
+
+	speex_bits_destroy(&bitsDecode);
+	speex_decoder_destroy(stateDecode);
+
+	/* rewrite wav header */
+	lseek(out_fd, 0, SEEK_SET);
+	init_wav_header(&header, pcm_length, samplerate);
+	write(out_fd, &header, sizeof(struct wav_header));
+	close(out_fd);
 }
