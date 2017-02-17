@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 	}
 
 	if (argc == 3)
-		out_fd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0);
+		out_fd = open(argv[2], O_WRONLY, 0);
 	else
 		out_fd = open("dummy.spx", O_WRONLY | O_CREAT | O_TRUNC, 0);
 	if (out_fd < 0) {
