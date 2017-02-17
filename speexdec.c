@@ -58,7 +58,7 @@ static int get_header_length(uint8_t *data, int header_len)
 }
 
 spx_int16_t pcm_frame[320];
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int header_len = 2;
 	int samplerate = 16000;
@@ -67,16 +67,24 @@ void main(int argc, char *argv[])
 	int pcm_length = 0;
 	int sample_num = samplerate / (1000 / 20);
 	uint8_t spx_data[128];
+	if ((argc > 4) || (argc < 2)) {
+		printf("usage: speexdec in_speex_file [out_wav_file]");
+		return -1;
+	}
 
-	int in_fd = open(argv[1], O_RDONLY, 0);
+	int in_fd = open(argv[1], O_RDONLY, 0666);
 	if (in_fd < 0) {
 		printf("open %s error\n", argv[1]);
-		return ;
+		return -1;
 	}
-	out_fd = open("dummy.wav", O_WRONLY | O_CREAT | O_TRUNC, 0);
+
+	if (argc == 3) out_fd = open(argv[2],
+					O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	else out_fd = open("dummy.wav", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+
 	if (out_fd < 0) {
-		printf("open dummy.wav error\n");
-		return ;
+		printf("open wav file error\n");
+		return -1;
 	}
 	int frame_len;
 	void *stateDecode;
@@ -87,14 +95,14 @@ void main(int argc, char *argv[])
 	if (samplerate > 12500) mode = SPEEX_MODEID_WB;
 	else mode = SPEEX_MODEID_NB;
 
-	printf("speex decode mode: %s\n", mode == SPEEX_MODEID_WB ? "WB" : "NB");
-	printf("speex sample rate: %d\n", samplerate);
+	//printf("speex decode mode: %s\n", mode == SPEEX_MODEID_WB ? "WB" : "NB");
+	//printf("speex sample rate: %d\n", samplerate);
 
 	stateDecode = speex_decoder_init(speex_lib_get_mode(mode));
 	speex_bits_init(&bitsDecode);
 
 	/* write header firstly */
-	init_wav_header(&header, 0, 0);
+	init_wav_header((char *)&header, 0, 0);
 	write(out_fd, &header, sizeof(struct wav_header));
 
 	while (1) {
@@ -115,7 +123,6 @@ void main(int argc, char *argv[])
 		write(out_fd, pcm_frame, sample_num * sizeof(uint16_t));
 		pcm_length += sample_num * sizeof(uint16_t);
 	}
-	printf("read in file over\n");
 	close(in_fd);
 
 	speex_bits_destroy(&bitsDecode);
@@ -123,7 +130,7 @@ void main(int argc, char *argv[])
 
 	/* rewrite wav header */
 	lseek(out_fd, 0, SEEK_SET);
-	init_wav_header(&header, pcm_length, samplerate);
+	init_wav_header((char *)&header, pcm_length, samplerate);
 	write(out_fd, &header, sizeof(struct wav_header));
 	close(out_fd);
 }

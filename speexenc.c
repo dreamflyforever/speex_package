@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
-
 #include <speex/speex.h>
 
 struct wav_header
@@ -69,7 +68,7 @@ int main(int argc, char** argv)
 	void *st = 0;
 	SpeexBits bits;
 
-	if (argc != 2 && argc != 3) {
+	if ((argc != 2) && (argc != 3)) {
 		printf("usage: speexenc in_wav_file [out_speex_file]\n");
 		return -1;
 	}
@@ -83,9 +82,9 @@ int main(int argc, char** argv)
 	}
 
 	if (argc == 3)
-		out_fd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0);
+		out_fd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	else
-		out_fd = open("dummy.spx", O_WRONLY | O_CREAT | O_TRUNC, 0);
+		out_fd = open("dummy.spx", O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (out_fd < 0) {
 		printf("open speex file failed!\n");
 		close(fd);
