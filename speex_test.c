@@ -11,18 +11,18 @@
 
 struct wav_header
 {
-	char riff_id[4];			//"RIFF"
-	uint32_t size0;				//file len - 8
-	char wave_fmt[8];			//"WAVEfmt "
-	uint32_t size1;				//0x10
-	uint16_t fmttag;			//0x01
-	uint16_t channel;			//1
-	uint32_t samplespersec;		//8000
-	uint32_t bytepersec;		//8000 * 2
-	uint16_t blockalign;		//1 * 16 / 8
-	uint16_t bitpersamples;		//16
-	char data_id[4];			//"data"
-	uint32_t size2;				//file len - 44
+	char riff_id[4];			/*("RIFF"*/
+	uint32_t size0;				/*file len - 8*/
+	char wave_fmt[8];			/*"WAVEfmt "*/
+	uint32_t size1;				/*0x10*/
+	uint16_t fmttag;			/*0x01*/
+	uint16_t channel;			/*1*/
+	uint32_t samplespersec;			/*8000*/
+	uint32_t bytepersec;			/*8000 * 2*/
+	uint16_t blockalign;			/*1 * 16 / 8*/
+	uint16_t bitpersamples;			/*16*/
+	char data_id[4];			/*"data"*/
+	uint32_t size2;				/*file len - 44*/
 };
 
 static int _get_framesize(int samplerate)
@@ -32,23 +32,22 @@ static int _get_framesize(int samplerate)
 
 static int _write_header(uint8_t *frame, int pdu_len, int headersz)
 {
-	switch (headersz)
-	{
-		case 1:
-			*frame = pdu_len;
-			break;
+	switch (headersz) {
+	case 1:
+		*frame = pdu_len;
+		break;
 
-		case 2:
-			*(frame + 0) = pdu_len & 0xff;
-			*(frame + 1) = (pdu_len >> 8) & 0xff;
-			break;
+	case 2:
+		*(frame + 0) = pdu_len & 0xff;
+		*(frame + 1) = (pdu_len >> 8) & 0xff;
+		break;
 
-		case 4:
-			*(frame + 0) = pdu_len & 0xff;
-			*(frame + 1) = (pdu_len >> 8) & 0xff;
-			*(frame + 2) = (pdu_len >> 16) & 0xff;
-			*(frame + 3) = (pdu_len >> 24) & 0xff;
-			break;
+	case 4:
+		*(frame + 0) = pdu_len & 0xff;
+		*(frame + 1) = (pdu_len >> 8) & 0xff;
+		*(frame + 2) = (pdu_len >> 16) & 0xff;
+		*(frame + 3) = (pdu_len >> 24) & 0xff;
+		break;
 	}
 
 	return 0;
@@ -138,7 +137,8 @@ int main(int argc, char** argv)
 		_write_header(spx_frame, length, speex_headersz);
 		write(out_fd, spx_frame, length + speex_headersz);
 	}
-
+	speex_encoder_destroy(st);
+	speex_bits_destroy(&bits);
 	close(fd);
 	close(out_fd);
 
