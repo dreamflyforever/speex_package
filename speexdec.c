@@ -95,8 +95,9 @@ int main(int argc, char *argv[])
 	if (samplerate > 12500) mode = SPEEX_MODEID_WB;
 	else mode = SPEEX_MODEID_NB;
 
-	//printf("speex decode mode: %s\n", mode == SPEEX_MODEID_WB ? "WB" : "NB");
-	//printf("speex sample rate: %d\n", samplerate);
+	/*printf("speex decode mode: %s\n",
+		mode == SPEEX_MODEID_WB ? "WB" : "NB");*/
+	/*printf("speex sample rate: %d\n", samplerate);*/
 
 	stateDecode = speex_decoder_init(speex_lib_get_mode(mode));
 	speex_bits_init(&bitsDecode);
