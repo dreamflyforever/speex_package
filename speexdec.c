@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <speex/speex.h>
 
+spx_int16_t pcm_frame[320];
+
 struct wav_header
 {
 	char riff_id[4];			/*("RIFF"*/
@@ -57,7 +59,6 @@ static int get_header_length(uint8_t *data, int header_len)
 	return length;
 }
 
-spx_int16_t pcm_frame[320];
 int main(int argc, char *argv[])
 {
 	int header_len = 2;
@@ -66,13 +67,20 @@ int main(int argc, char *argv[])
 	int out_fd;
 	int pcm_length = 0;
 	int sample_num = samplerate / (1000 / 20);
-	uint8_t spx_data[128];
+	uint8_t spx_data[128] = {0};
+	int frame_len;
+	void *stateDecode;
+	SpeexBits bitsDecode;
+	struct wav_header header;
+	int mode;
+	int in_fd;
+
 	if ((argc > 4) || (argc < 2)) {
 		printf("usage: speexdec in_speex_file [out_wav_file]");
 		return -1;
 	}
 
-	int in_fd = open(argv[1], O_RDONLY, 0666);
+	in_fd = open(argv[1], O_RDONLY, 0666);
 	if (in_fd < 0) {
 		printf("open %s error\n", argv[1]);
 		return -1;
@@ -86,11 +94,6 @@ int main(int argc, char *argv[])
 		printf("open wav file error\n");
 		return -1;
 	}
-	int frame_len;
-	void *stateDecode;
-	SpeexBits bitsDecode;
-	struct wav_header header;
-	int mode;
 
 	if (samplerate > 12500) mode = SPEEX_MODEID_WB;
 	else mode = SPEEX_MODEID_NB;

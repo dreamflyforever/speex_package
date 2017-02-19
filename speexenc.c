@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <speex/speex.h>
 
+spx_int16_t pcm_frame[320];
+uint8_t spx_frame[128];
+
 struct wav_header
 {
 	char riff_id[4];			/*("RIFF"*/
@@ -50,9 +53,6 @@ static int _write_header(uint8_t *frame, int pdu_len, int headersz)
 
 	return 0;
 }
-
-spx_int16_t pcm_frame[320];
-uint8_t spx_frame[128];
 
 int main(int argc, char** argv)
 {
