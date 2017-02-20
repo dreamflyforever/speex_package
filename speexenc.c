@@ -56,7 +56,7 @@ static int _write_header(uint8_t *frame, int pdu_len, int headersz)
 
 int main(int argc, char** argv)
 {
-	int fd, out_fd;
+	int in_fd, out_fd;
 	int frame_size;
 
 	int speex_headersz;
@@ -75,8 +75,8 @@ int main(int argc, char** argv)
 
 	speex_headersz = 2;
 
-	fd = open(argv[1], O_RDONLY, 0);
-	if (fd < 0) {
+	in_fd = open(argv[1], O_RDONLY, 0);
+	if (in_fd < 0) {
 		printf("open wav failed!\n");
 		return -1;
 	}
@@ -87,12 +87,12 @@ int main(int argc, char** argv)
 		out_fd = open("dummy.spx", O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (out_fd < 0) {
 		printf("open speex file failed!\n");
-		close(fd);
+		close(in_fd);
 		return -1;
 	}
 
 	/* read riff header */
-	read(fd, &header, sizeof(struct wav_header));
+	read(in_fd, &header, sizeof(struct wav_header));
 	frame_size = _get_framesize(header.samplespersec);
 
 	{
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
 
 	while (1) {
 		/* hand one frame */
-		int length = read(fd, pcm_frame, frame_size);
+		int length = read(in_fd, pcm_frame, frame_size);
 		if (length != frame_size) break;
 
 		speex_bits_reset(&bits);
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 	}
 	speex_encoder_destroy(st);
 	speex_bits_destroy(&bits);
-	close(fd);
+	close(in_fd);
 	close(out_fd);
 
 	return 0;
